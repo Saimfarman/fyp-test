@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import PwaRegister from "./pwa-register";
+import AppShell from "./app-shell";
 
 export const metadata: Metadata = {
   title: "LeadPitch",
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><PwaRegister />{children}</body>
+      <body><PwaRegister /><AppShell>{children}</AppShell></body>
     </html>
   );
 }

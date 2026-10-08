@@ -1,4 +1,4 @@
-from backend.app.audits import (
+from app.audits import (
     ContactRule,
     HeadingRule,
     PageFacts,

@@ -5,17 +5,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.22",
+    "leaflet": "^1.9.4",
     "next": "^16.4.0",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.4.0",
     "typescript": "5.7.2"
   }
 }

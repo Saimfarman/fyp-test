@@ -1,12 +1,15 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+const LeadMap = dynamic(() => import("./lead-map"), { ssr: false });
 
 type Lead = {
   id: string;
   name: string;
   category?: string;
   address?: string;
+  phone?: string;
   latitude: number;
   longitude: number;
   websiteUrl?: string;
@@ -57,8 +60,11 @@ export default function DiscoveryWorkspace() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [pitch, setPitch] = useState<Pitch | null>(null);
   const [pitchLoading, setPitchLoading] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
-  const visibleLeads = useMemo(() => leads.slice(0, 100), [leads]);
+  const visibleLeads = useMemo(() => leads.filter((lead) => severityFilter === "ALL" || lead.severity === severityFilter).slice(0, 100), [leads, severityFilter]);
 
   async function search(event: FormEvent) {
     event.preventDefault();
@@ -73,7 +79,12 @@ export default function DiscoveryWorkspace() {
       });
       if (!response.ok) throw new Error("Search failed. Sign in and try again.");
       const result = await response.json();
-      const listResponse = await fetch(`${API_URL}/api/leads`, { credentials: "include" });
+      const params = new URLSearchParams();
+      if (severityFilter !== "ALL") params.set("severity", severityFilter);
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (categoryFilter) params.set("category", categoryFilter);
+      window.history.replaceState(null, "", `/discover?${params.toString()}`);
+      const listResponse = await fetch(`${API_URL}/api/leads?${params.toString()}`, { credentials: "include" });
       if (!listResponse.ok) throw new Error("Leads could not be loaded.");
       const list = await listResponse.json();
       setLeads(list.items ?? []);
@@ -126,6 +137,13 @@ export default function DiscoveryWorkspace() {
     } finally {
       setPitchLoading(false);
     }
+
+  }
+
+  async function saveToPipeline() {
+    if (!selected) return;
+    const response = await fetch(`${API_URL}/api/leads/${selected.id}/pipeline`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: "NEW" }) });
+    setMessage(response.ok ? `${selected.name} was saved to your pipeline.` : "The lead could not be saved to your pipeline.");
   }
 
   return (
@@ -142,6 +160,7 @@ export default function DiscoveryWorkspace() {
             <button type="submit" disabled={loading}>{loading ? "Searching..." : "Search area"}</button>
           </div>
         </form>
+        <div className="filter-row"><label className="filter-control">Severity<select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)}><option value="ALL">All severities</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>UNSCANNED</option></select></label><label className="filter-control">Website<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">All statuses</option><option value="NO_WEBSITE">No website</option><option value="SOCIAL_ONLY">Social only</option><option value="DEAD_SITE">Dead site</option><option value="HAS_WEBSITE">Website live</option></select></label><label className="filter-control">Category<input value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} placeholder="e.g. salon" /></label></div>
         <a className="secondary-action" href="/pipeline">Pipeline</a>
       </header>
       <div className="discovery-layout">
@@ -155,30 +174,20 @@ export default function DiscoveryWorkspace() {
           ))}
           {!leads.length && <p className="empty-state">Your discovered businesses will appear here.</p>}
         </aside>
-        <section className="map-surface" aria-label="Discovery map">
-          <div className="map-attribution">OpenStreetMap contributors</div>
-          {leads.map((lead, index) => (
-            <button
-              key={lead.id}
-              className={`map-pin ${severityClass(lead.severity)}`}
-              style={{ left: `${12 + ((index * 19) % 76)}%`, top: `${18 + ((index * 31) % 66)}%` }}
-              aria-label={`${lead.name}, ${statusLabels[lead.status] ?? lead.status}, ${lead.severity}`}
-              onClick={() => setSelected(lead)}
-            >{lead.status === "NO_WEBSITE" ? "X" : lead.status === "DEAD_SITE" ? "!" : "•"}</button>
-          ))}
-          {!leads.length && <div className="map-empty"><strong>Your map starts here.</strong><span>Search a category to discover nearby businesses.</span></div>}
-        </section>
+        <section className="map-surface" aria-label="Discovery map">{leads.length ? <LeadMap leads={leads} selectedId={selected?.id} onSelect={setSelected} /> : <div className="map-empty"><strong>Your map starts here.</strong><span>Search a category to discover nearby businesses.</span></div>}</section>
         <aside className={`lead-detail ${selected ? "open" : ""}`} aria-label="Lead details">
           {selected ? <>
             <p className={`severity-label ${severityClass(selected.severity)}`}>{selected.severity}</p>
             <h2>{selected.name}</h2>
             <p className="muted">{selected.category ?? "Local business"} · {statusLabels[selected.status] ?? selected.status}</p>
+            <div className="score-bars"><span><i style={{ width: selected.severity === "CRITICAL" ? "92%" : selected.severity === "HIGH" ? "72%" : "46%" }} />Opportunity need</span><span><i style={{ width: `${Math.min(100, (selected.reviewCount ?? 0) / 2)}%` }} />Review reach</span></div>
             <dl>
               <dt>Address</dt><dd>{selected.address || "Not listed in OpenStreetMap"}</dd>
               <dt>Rating</dt><dd>{selected.rating ? `${selected.rating}/5 (${selected.reviewCount ?? 0} reviews)` : "Not available"}</dd>
               <dt>Website</dt><dd>{selected.websiteUrl ? <a href={selected.websiteUrl} target="_blank" rel="noreferrer">{selected.websiteUrl}</a> : "No website listed"}</dd>
             </dl>
             <button className="primary-action" onClick={runAudit} disabled={auditLoading || selected.status === "NO_WEBSITE" || selected.status === "SOCIAL_ONLY"}>{auditLoading ? "Auditing..." : "Run website audit"}</button>
+            <div className="detail-actions"><button className="secondary-action" onClick={saveToPipeline}>Save to pipeline</button><a className="secondary-action" href={`tel:${selected.phone ?? ""}`}>Call</a>{selected.websiteUrl && <a className="secondary-action" href={selected.websiteUrl} target="_blank" rel="noreferrer">Open site</a>}</div>
             {audit && <section className="audit-summary" aria-live="polite">
               <div className="audit-score"><strong>{audit.overallScore}</strong><span>/100 audit score</span></div>
               <p className={`severity-label ${severityClass(audit.severity)}`}>{audit.severity} opportunity</p>

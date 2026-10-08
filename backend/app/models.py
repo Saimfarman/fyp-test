@@ -24,6 +24,11 @@ class Workspace(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(120))
     plan: Mapped[str] = mapped_column(String(20), default="free")
+    company_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    brand_color: Mapped[str] = mapped_column(String(7), default="#ff7548")
+    default_city: Mapped[str] = mapped_column(String(80), default="Karachi")
+    custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     members: Mapped[list["WorkspaceMember"]] = relationship(back_populates="workspace")
 
@@ -36,6 +41,18 @@ class WorkspaceMember(Base):
     role: Mapped[str] = mapped_column(String(20), default="sales")
     workspace: Mapped[Workspace] = relationship(back_populates="members")
     user: Mapped[User] = relationship(back_populates="memberships")
+
+
+class WorkspaceInvitation(Base):
+    __tablename__ = "workspace_invitations"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(320))
+    role: Mapped[str] = mapped_column(String(20), default="sales")
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Session(Base):

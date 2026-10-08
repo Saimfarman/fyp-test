@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Pitch = {
   id: string;
@@ -20,6 +21,7 @@ export default function PitchPage({ params }: { params: Promise<{ id: string }> 
   const [pitch, setPitch] = useState<Pitch | null>(null);
   const [message, setMessage] = useState("Loading pitch...");
   const [shareUrl, setShareUrl] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     params.then(({ id }) => fetch(`${API_URL}/api/pitches/${id}`, { credentials: "include" })
@@ -53,7 +55,7 @@ export default function PitchPage({ params }: { params: Promise<{ id: string }> 
       body: JSON.stringify({ templateId: "local-service" }),
     });
     const result = await response.json();
-    if (response.ok) window.location.href = `/prototypes/${result.id}`;
+    if (response.ok) router.push(`/prototypes/${result.id}`);
     else setMessage(result.error?.message ?? "Prototype could not be created.");
   }
 

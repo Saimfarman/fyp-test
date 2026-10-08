@@ -8,7 +8,7 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 from quart import Blueprint, current_app, g, jsonify, request
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from .models import Lead, OptOutRequest, WorkspaceMember
 
@@ -161,8 +161,21 @@ async def list_leads():
     workspace_id = await _workspace_id()
     if not workspace_id:
         return jsonify({"error": {"code": "unauthenticated", "message": "Authentication required."}}), 401
+    status = request.args.get("status")
+    severity = request.args.get("severity")
+    category = request.args.get("category")
+    search = request.args.get("q")
+    conditions = [Lead.workspace_id == workspace_id]
+    if status:
+        conditions.append(Lead.website_status == status.upper())
+    if severity:
+        conditions.append(Lead.severity == severity.upper())
+    if category:
+        conditions.append(Lead.category.ilike(f"%{category}%"))
+    if search:
+        conditions.append(Lead.name.ilike(f"%{search}%"))
     async with current_app.session_factory() as db:
-        rows = (await db.execute(select(Lead).where(Lead.workspace_id == workspace_id).order_by(Lead.created_at.desc()).limit(100))).scalars()
+        rows = (await db.execute(select(Lead).where(and_(*conditions)).order_by(Lead.created_at.desc()).limit(500))).scalars()
         return jsonify({"items": [_lead_json(lead) for lead in rows]})
 
 
@@ -171,8 +184,17 @@ async def map_leads():
     workspace_id = await _workspace_id()
     if not workspace_id:
         return jsonify({"error": {"code": "unauthenticated", "message": "Authentication required."}}), 401
+    try:
+        min_lng, min_lat, max_lng, max_lat = [float(value) for value in request.args.get("bbox", "").split(",")]
+    except (ValueError, TypeError):
+        min_lng = min_lat = max_lng = max_lat = None
+    conditions = [Lead.workspace_id == workspace_id]
+    if min_lng is not None:
+        conditions.extend([Lead.longitude >= min_lng, Lead.longitude <= max_lng, Lead.latitude >= min_lat, Lead.latitude <= max_lat])
+    if request.args.get("severity"):
+        conditions.append(Lead.severity == request.args["severity"].upper())
     async with current_app.session_factory() as db:
-        rows = (await db.execute(select(Lead).where(Lead.workspace_id == workspace_id).limit(5000))).scalars()
+        rows = (await db.execute(select(Lead).where(and_(*conditions)).limit(5000))).scalars()
         return jsonify({"items": [_pin_json(lead) for lead in rows]})
 
 

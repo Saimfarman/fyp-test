@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Card = { id: string; leadId: string; leadName: string; stage: string; notes: string };
+type Card = { id: string; leadId: string; leadName: string; stage: string; notes: string; assignedTo?: string };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const STAGES = ["NEW", "CONTACTED", "PITCHED", "NEGOTIATING", "WON", "LOST"];
 
@@ -34,6 +34,14 @@ export default function PipelinePage() {
     else setMessage("The pipeline stage could not be updated.");
   }
 
+  async function saveNotes(card: Card, notes: string) {
+    const response = await fetch(`${API_URL}/api/leads/${card.leadId}/pipeline`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: card.stage, notes }),
+    });
+    if (response.ok) void load();
+  }
+
   return (
     <main className="pipeline-page">
       <header className="discovery-header">
@@ -48,7 +56,7 @@ export default function PipelinePage() {
             {cards.filter((card) => card.stage === stage).map((card) => (
               <article className="pipeline-card" key={card.id}>
                 <strong>{card.leadName}</strong>
-                <p>{card.notes || "No notes yet."}</p>
+                <textarea aria-label={`Notes for ${card.leadName}`} defaultValue={card.notes} onBlur={(event) => void saveNotes(card, event.currentTarget.value)} placeholder="Add a note or next step..." />
                 <label>Move stage
                   <select value={card.stage} onChange={(event) => void move(card, event.target.value)}>
                     {STAGES.map((option) => <option key={option}>{option}</option>)}

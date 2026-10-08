@@ -1,4 +1,4 @@
-from backend.app.prototypes import TEMPLATES, _clean_text
+from app.prototypes import TEMPLATES, _clean_text
 
 
 def test_templates_have_versioned_sections():

@@ -5,7 +5,7 @@ import json
 from datetime import UTC, datetime, timedelta
 
 import httpx
-from arq import create_pool
+from arq import run_worker
 from arq.connections import RedisSettings
 from arq.cron import cron
 from sqlalchemy import select
@@ -55,3 +55,7 @@ class WorkerSettings:
     cron_jobs = [cron(deliver_webhooks, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55})]
     redis_settings = RedisSettings.from_dsn(os.getenv("REDIS_URL", "redis://localhost:6379/0"))
     max_jobs = 10
+
+
+if __name__ == "__main__":
+    run_worker(WorkerSettings)

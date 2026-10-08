@@ -1,5 +1,5 @@
-from backend.app.pitches import _build_content, _pdf_bytes
-from backend.app.models import Lead
+from app.pitches import _build_content, _pdf_bytes
+from app.models import Lead
 
 
 def test_pitch_content_is_bilingual_and_fact_grounded():
