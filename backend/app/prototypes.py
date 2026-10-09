@@ -2,7 +2,6 @@ import io
 import json
 import re
 import zipfile
-from datetime import datetime
 from html import escape
 
 from quart import Blueprint, Response, current_app, g, jsonify, request

@@ -4,7 +4,7 @@ import ipaddress
 import re
 import socket
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 import httpx
 from quart import Blueprint, current_app, g, jsonify, request

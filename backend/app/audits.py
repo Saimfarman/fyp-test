@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from urllib.parse import urljoin, urlparse
 
 import httpx
-from quart import Blueprint, current_app, g, jsonify, request
+from quart import Blueprint, current_app, g, jsonify
 from sqlalchemy import select
 
 from .discovery import PRIVATE_NETWORKS, normalize_url
