@@ -161,10 +161,10 @@ The health endpoints are:
 Create and activate a virtual environment from the repository root:
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
+py -3.12 -m venv .venv-1
+.\.venv-1\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r backend\requirements.txt
+python -m pip install --only-binary=:all: -r backend\requirements.txt
 ```
 
 Start PostgreSQL and Redis separately. The backend reads environment variables
@@ -188,7 +188,7 @@ In a second terminal, start the worker:
 
 ```powershell
 cd backend
-..\.venv\Scripts\Activate.ps1
+..\.venv-1\Scripts\Activate.ps1
 python -m app.worker
 ```
 
@@ -212,16 +212,18 @@ npm start
 
 ## Testing and code quality
 
-Run backend tests from the repository root:
+Run backend tests from the `backend` directory:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest backend\tests
+Set-Location backend
+..\.venv-1\Scripts\python.exe -m pytest tests
 ```
 
 Run backend linting:
 
 ```powershell
-.\.venv\Scripts\python.exe -m ruff check backend
+Set-Location ..
+.\.venv-1\Scripts\python.exe -m ruff check backend
 ```
 
 Run frontend linting and the production build:
